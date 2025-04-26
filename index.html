@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -141,27 +102,23 @@
         let splitType = 'individual';
         let payer = '';
 
-        // Update split type
         document.getElementById('splitType').addEventListener('change', () => {
             splitType = document.getElementById('splitType').value;
             renderItems();
             updatePeopleSection();
         });
 
-        // Update payer
         document.getElementById('payerSection').addEventListener('input', (e) => {
             if (e.target.id === 'payerSelect' || e.target.id === 'payerInput') {
                 payer = e.target.value;
             }
         });
 
-        // Add item
         document.getElementById('addItem').addEventListener('click', () => {
             items.push({ name: '', price: 0, person: '' });
             renderItems();
         });
 
-        // Remove item
         document.getElementById('items').addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-item') && items.length > 1) {
                 const index = Array.from(e.target.parentNode.parentNode.children).indexOf(e.target.parentNode);
@@ -170,7 +127,6 @@
             }
         });
 
-        // Update item data on input
         document.getElementById('items').addEventListener('input', (e) => {
             const index = Array.from(e.target.parentNode.parentNode.children).indexOf(e.target.parentNode);
             if (e.target.classList.contains('item-name')) {
@@ -183,7 +139,6 @@
             if (splitType === 'individual') updatePeopleSection();
         });
 
-        // Render items
         function renderItems() {
             const itemsDiv = document.getElementById('items');
             itemsDiv.innerHTML = items.map((item, i) => `
@@ -197,7 +152,6 @@
             if (splitType === 'individual') updatePeopleSection();
         }
 
-        // Update people section and payer input
         function updatePeopleSection() {
             const peopleSection = document.getElementById('peopleSection');
             const peopleList = document.getElementById('peopleList');
@@ -222,13 +176,11 @@
                 paxInput.classList.remove('hidden');
                 payerSelect.classList.add('hidden');
                 payerInput.classList.remove('hidden');
-                payerInput.value = ''; // Clear input for equal splits
+                payerInput.value = '';
             }
         }
 
-        // Calculate split
         document.getElementById('calculate').addEventListener('click', () => {
-            // Validate items
             const validItems = items.filter(item => item.name && item.price > 0);
             if (validItems.length === 0) {
                 alert('Please add at least one valid item with a name and price.');
@@ -246,7 +198,6 @@
                 }
             }
 
-            // Calculate totals
             const includeService = document.getElementById('serviceCharge').checked;
             const includeGst = document.getElementById('gstCheck').checked;
             const gstRate = includeGst ? parseFloat(document.getElementById('gst').value) : 0;
@@ -256,7 +207,6 @@
             const gst = includeGst ? subtotal * gstRate : 0;
             const total = subtotal + serviceCharge + gst + rounding;
 
-            // Generate breakdown
             let breakdownHtml = `
                 <p><strong>Subtotal:</strong> RM${subtotal.toFixed(2)}</p>
                 ${includeService ? `<p><strong>Service Charge (10%):</strong> RM${serviceCharge.toFixed(2)}</p>` : ''}
@@ -266,7 +216,6 @@
             `;
 
             if (splitType === 'individual') {
-                // Individual split
                 const perPersonTax = people.length > 0 ? (serviceCharge + gst) / people.length : 0;
                 const breakdown = people.map(person => {
                     const personItems = validItems.filter(item => item.person === person);
@@ -300,7 +249,6 @@
                     </table>
                 `;
             } else {
-                // Equal split
                 const pax = parseInt(document.getElementById('pax').value) || 1;
                 const perPerson = total / pax;
                 breakdownHtml += `
@@ -309,14 +257,12 @@
                 `;
             }
 
-            // Add payment message
             if (payer) {
                 breakdownHtml += `
                     <p class="mt-4 text-sm text-gray-600">The amount should be paid to ${payer} via DuitNow.</p>
                 `;
             }
 
-            // Render breakdown
             document.getElementById('breakdown').innerHTML = breakdownHtml;
             document.getElementById('result').style.display = 'block';
         });
